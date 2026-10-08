@@ -6,6 +6,7 @@
 #include <QElapsedTimer>
 #include <QVector>
 #include <QPointF>
+#include <QList>
 
 class HeatmapWidget : public QWidget {
     Q_OBJECT
@@ -13,9 +14,21 @@ class HeatmapWidget : public QWidget {
 public:
     explicit HeatmapWidget(QWidget *parent = nullptr);
 
+    enum DisplayMode { MoveHeat, ClickHeat, Combined };
+    Q_ENUM(DisplayMode)
+
+    int getMoves() const { return totalMoves; }
+    int getClicks() const { return totalClicks; }
+    bool exportImage(const QString &filePath);
+
 public slots:
     void clearHeatmap();
     void setTrackingEnabled(bool enabled);
+    void setDisplayMode(DisplayMode mode);
+    void setTrailEnabled(bool enabled);
+
+signals:
+    void statsChanged(int moves, int clicks);
 
 protected:
     void paintEvent(QPaintEvent *event) override;
@@ -27,9 +40,18 @@ private:
     // Heatmap grid
     int gridCols = 0;
     int gridRows = 0;
-    static constexpr int CellSize = 8;
-    QVector<float> moveHeat;   // movement density
-    QVector<float> clickHeat;  // click density
+    static constexpr int CellSize = 6;
+    QVector<float> moveHeat;
+    QVector<float> clickHeat;
+
+    // Trail
+    struct TrailPoint {
+        QPointF pos;
+        float age;
+    };
+    QList<TrailPoint> trail;
+    static constexpr int MaxTrail = 200;
+    bool showTrail = true;
 
     // Stats
     int totalMoves = 0;
@@ -38,19 +60,16 @@ private:
     float maxClickHeat = 1.0f;
 
     bool tracking = true;
-
-    // Decay timer
-    QTimer *decayTimer;
-    void decayHeat();
-
-    // Display mode
-    enum DisplayMode { MoveHeat, ClickHeat, Combined };
     DisplayMode displayMode = Combined;
+
+    // Timers
+    QTimer *decayTimer;
+    QTimer *trailTimer;
+    void decayHeat();
+    void ageTrail();
 
     void allocateGrid();
     QColor heatColor(float value, bool isClick) const;
-
-    friend class HeatmapTab;
 };
 
 #endif // HEATMAPWIDGET_H

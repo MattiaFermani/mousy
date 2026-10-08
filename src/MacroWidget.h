@@ -8,6 +8,8 @@
 #include <QLabel>
 #include <QTimer>
 #include <QVector>
+#include <QSpinBox>
+#include <QComboBox>
 
 struct MacroEvent {
     enum Type { MouseMove, MouseClick, KeyPress, KeyRelease, Delay };
@@ -29,10 +31,17 @@ private slots:
     void startRecording();
     void stopRecording();
     void playMacro();
+    void stopMacro();
     void clearMacro();
     void deleteMacroItem();
     void saveMacro();
     void loadMacro();
+
+    // Presets
+    void addPresetDoubleClick();
+    void addPresetRapidFire();
+    void addPresetDelay();
+    void addPresetText();
 
 protected:
     bool eventFilter(QObject *obj, QEvent *event) override;
@@ -41,11 +50,16 @@ private:
     QListWidget *eventList;
     QPushButton *recordBtn;
     QPushButton *playBtn;
+    QPushButton *stopBtn;
     QPushButton *clearBtn;
     QPushButton *deleteBtn;
     QPushButton *saveBtn;
     QPushButton *loadBtn;
     QLabel *statusLabel;
+    QLabel *statsLabel;
+
+    QSpinBox *repeatSpinBox;
+    QComboBox *speedComboBox;
 
     bool recording = false;
     bool playing = false;
@@ -54,9 +68,11 @@ private:
 
     QTimer *playTimer;
     int playIndex = 0;
+    int currentLoop = 0;
+    int targetLoops = 1;
 
     void addEvent(const MacroEvent &event);
-    void updateUI();
+    void updateStats();
     void playNextEvent();
 };
 
