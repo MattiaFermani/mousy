@@ -1,6 +1,9 @@
 #include "AudioFx.h"
+#include <QMediaDevices>
+#include <QAudioDevice>
+#include <QDebug>
 #include <cmath>
-#include <QIODevice>
+#include <algorithm>
 
 AudioFx& AudioFx::instance() {
     static AudioFx fx;
@@ -12,22 +15,55 @@ AudioFx::AudioFx() {
     m_format.setChannelCount(1);
     m_format.setSampleFormat(QAudioFormat::Int16);
 
-    QAudioDevice device = QMediaDevices::defaultAudioOutput();
-    if (!device.isNull()) {
-        m_sink = new QAudioSink(device, m_format, this);
-    }
+    // Pre-synthesize procedural sound effects in memory
+    m_hitPcm    = generateTone(1100.0f, 650.0f, 0.08f, 0.40f, true);     // crisp hitmarker
+    m_streakPcm = generateTone(880.0f,  1760.0f, 0.12f, 0.45f, true);    // rising combo chime
+    m_missPcm   = generateTone(160.0f,  70.0f,  0.12f, 0.35f, true);     // dull thud
+    m_beepPcm   = generateTone(440.0f,  440.0f, 0.07f, 0.30f, false);    // 3-2-1 countdown beep
+    m_startPcm  = generateTone(880.0f,  880.0f, 0.14f, 0.40f, false);    // GO! start tone
 
-    // Synthesize procedural sound effects
-    m_hitPcm = generateTone(1100.0f, 650.0f, 0.08f, 0.45f, true);     // crisp click / hitmarker
-    m_streakPcm = generateTone(880.0f, 1760.0f, 0.12f, 0.5f, true);   // rising chime
-    m_missPcm = generateTone(160.0f, 70.0f, 0.15f, 0.4f, true);       // dull thud
-    m_beepPcm = generateTone(440.0f, 440.0f, 0.07f, 0.35f, false);    // 3-2-1 beep
-    m_startPcm = generateTone(880.0f, 880.0f, 0.14f, 0.45f, false);   // go! beep
+    ensureSink();
 }
 
 AudioFx::~AudioFx() {
     if (m_sink) {
         m_sink->stop();
+        delete m_sink;
+        m_sink = nullptr;
+        m_io = nullptr;
+    }
+}
+
+void AudioFx::setEnabled(bool enabled) {
+    m_enabled = enabled;
+    if (!m_enabled && m_sink) {
+        m_sink->reset();
+    }
+}
+
+void AudioFx::ensureSink() {
+    if (m_sink && m_io && m_io->isWritable()) return;
+
+    try {
+        QAudioDevice defaultDevice = QMediaDevices::defaultAudioOutput();
+        if (defaultDevice.isNull()) {
+            qDebug() << "[AudioFx] No default audio output device available.";
+            return;
+        }
+
+        if (!m_sink) {
+            m_sink = new QAudioSink(defaultDevice, m_format, this);
+            m_sink->setBufferSize(64 * 1024);
+        }
+
+        if (!m_io || !m_io->isWritable() || m_sink->error() != QAudio::NoError) {
+            m_sink->reset();
+            m_io = m_sink->start();
+        }
+    } catch (...) {
+        qWarning() << "[AudioFx] Exception caught while initializing audio sink.";
+        m_sink = nullptr;
+        m_io = nullptr;
     }
 }
 
@@ -45,7 +81,7 @@ QByteArray AudioFx::generateTone(float freqStart, float freqEnd, float durationS
 
         float amp = volume;
         if (decay) {
-            amp *= (1.0f - t * t); // smooth decay
+            amp *= (1.0f - t * t); // smooth decay envelope
         }
 
         float s = std::sin(phase) * amp;
@@ -56,20 +92,20 @@ QByteArray AudioFx::generateTone(float freqStart, float freqEnd, float durationS
 }
 
 void AudioFx::playPcm(const QByteArray &pcm) {
-    if (!m_enabled || !m_sink || pcm.isEmpty()) return;
+    if (!m_enabled || pcm.isEmpty()) return;
 
-    QBuffer *buf = new QBuffer(this);
-    buf->setData(pcm);
-    buf->open(QIODevice::ReadOnly);
+    ensureSink();
 
-    m_sink->stop();
-    m_sink->start(buf);
+    if (!m_sink || !m_io || !m_io->isWritable()) return;
 
-    connect(m_sink, &QAudioSink::stateChanged, this, [buf](QAudio::State state) {
-        if (state == QAudio::IdleState || state == QAudio::StoppedState) {
-            buf->deleteLater();
-        }
-    });
+    if (m_sink->error() != QAudio::NoError) {
+        m_sink->reset();
+        m_io = m_sink->start();
+    }
+
+    if (m_io && m_io->isWritable()) {
+        m_io->write(pcm.constData(), pcm.size());
+    }
 }
 
 void AudioFx::playHit() {

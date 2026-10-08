@@ -4,9 +4,8 @@
 #include <QObject>
 #include <QByteArray>
 #include <QAudioSink>
-#include <QMediaDevices>
 #include <QAudioFormat>
-#include <QBuffer>
+#include <QIODevice>
 
 class AudioFx : public QObject {
     Q_OBJECT
@@ -18,16 +17,19 @@ public:
     void playMiss();
     void playStreak();
     void playCountdown(bool isStart);
-    void setEnabled(bool enabled) { m_enabled = enabled; }
+    void setEnabled(bool enabled);
     bool isEnabled() const { return m_enabled; }
 
 private:
     AudioFx();
     ~AudioFx();
+    AudioFx(const AudioFx&) = delete;
+    AudioFx& operator=(const AudioFx&) = delete;
 
     bool m_enabled = true;
     QAudioFormat m_format;
     QAudioSink *m_sink = nullptr;
+    QIODevice *m_io = nullptr;
 
     QByteArray m_hitPcm;
     QByteArray m_missPcm;
@@ -35,6 +37,7 @@ private:
     QByteArray m_beepPcm;
     QByteArray m_startPcm;
 
+    void ensureSink();
     QByteArray generateTone(float freqStart, float freqEnd, float durationSec, float volume, bool decay);
     void playPcm(const QByteArray &pcm);
 };
