@@ -1,0 +1,11 @@
+# Mousy Linux udev rule
+# Grants unprivileged desktop users read/write permissions to /dev/uinput
+# for hardware-level key remapping, macros, and virtual mouse devices.
+#
+# Installation:
+#   sudo cp 99-mousy.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules && sudo udevadm trigger
+#   sudo modprobe uinput
+
+KERNEL=="uinput", SUBSYSTEM=="misc", TAG+="uaccess", OPTIONS+="static_node=uinput"
+KERNEL=="event*", SUBSYSTEM=="input", ATTRS{name}=="*Mouse*", TAG+="uaccess"

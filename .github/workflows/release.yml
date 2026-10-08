@@ -7,9 +7,9 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: 'Tag to release (e.g. v1.0.0)'
+        description: 'Tag to release (e.g. v1.1.0)'
         required: true
-        default: 'v1.0.0'
+        default: 'v1.1.0'
 
 permissions:
   contents: write
@@ -34,7 +34,6 @@ jobs:
             TAG="${GITHUB_REF#refs/tags/}"
           fi
           echo "TAG=${TAG}" >> $GITHUB_OUTPUT
-          # Parse SemVer
           RAW="${TAG#v}"
           MAJOR=$(echo "$RAW" | cut -d. -f1)
           MINOR=$(echo "$RAW" | cut -d. -f2)
@@ -46,7 +45,7 @@ jobs:
       - name: Install Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake build-essential qt6-base-dev qt6-tools-dev
+          sudo apt-get install -y cmake build-essential qt6-base-dev qt6-tools-dev qt6-multimedia-dev libgl1-mesa-dev
 
       - name: Configure CMake
         run: |
@@ -63,18 +62,15 @@ jobs:
           mkdir -p "${PKG_DIR}"
           cp build/Mousy "${PKG_DIR}/"
           cp README.md "${PKG_DIR}/"
-          cp LICENSE "${PKG_DIR}/" 2>/dev/null || true
+          cp ROADMAP.md "${PKG_DIR}/"
           cp build.sh "${PKG_DIR}/"
-
-          # Create run script
           cat << 'EOF' > "${PKG_DIR}/run.sh"
-#!/bin/bash
-DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
-exec "$DIR/Mousy" "$@"
-EOF
+          #!/bin/bash
+          DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+          exec "$DIR/Mousy" "$@"
+          EOF
           chmod +x "${PKG_DIR}/run.sh" "${PKG_DIR}/Mousy"
-
           tar -czvf "${PKG_DIR}.tar.gz" "${PKG_DIR}"
           sha256sum "${PKG_DIR}.tar.gz" > "${PKG_DIR}.tar.gz.sha256"
 
@@ -88,34 +84,35 @@ EOF
           COMMIT=$(git rev-parse --short HEAD)
 
           cat << EOF > release_notes.md
-## 🖱 Mousy ${TAG}
+          ## 🖱 Mousy ${TAG}
 
-### 📐 Semantic Versioning Breakdown
-- **MAJOR (${MAJOR})**: Core engine & architecture stability.
-- **MINOR (${MINOR})**: Subversion feature additions (Button Mapper, Live Heatmap, Pro Aim Trainer, Macro Studio).
-- **PATCH (${PATCH})**: Maintenance revisions, calibration tweaks, and performance optimizations.
-- **Git Commit**: \`${COMMIT}\`
+          ### 📐 Semantic Versioning Breakdown
+          - **MAJOR (${MAJOR})**: Core engine & architecture stability.
+          - **MINOR (${MINOR})**: Feature additions (Diagnostics tab, 3D OBJ Loader, System uinput remapper, Profiles).
+          - **PATCH (${PATCH})**: Maintenance revisions, calibration tweaks, and performance optimizations.
+          - **Git Commit**: \`${COMMIT}\`
 
----
+          ---
 
-### 🌟 Key Capabilities
-- **🖱 Interactive Button Mapper**: Visual mouse top-down diagram with real-time neon hover highlights & direct key remapping.
-- **🌈 Dynamic RGB Studio**: 5 animated lighting modes (Neon Cyan, Rainbow Cycle, Cyberpunk Pink, Matrix Green, Crimson Fire) with 14-LED underglow simulation.
-- **⚙ Hardware Engine**: DPI stages (400-6400 DPI) and Polling Rate selector (125Hz-1000Hz).
-- **🔥 Live Heatmap Tracker**: Dual-layer movement & click density using Gaussian splatting, fading neon trails, and **PNG snapshot export**.
-- **🎯 Pro Aim Trainer**: 3 game modes (Classic, Flick, GridShot) with particle explosion bursts, combo streak fire, and full analytics.
-- **⏺ Macro Studio**: Precision event recorder with quick presets (Double-Click, Rapid Fire, Text Sequence), loop repeats, and speed scaling.
+          ### 🌟 What's Inside
+          - **🖱 3D Mouse Viewport**: Free 360° rotation with momentum inertia, zoom, OBJ/STL import/export, and clickable button picking.
+          - **📊 Sensor Diagnostics**: Real-time USB polling rate (Hz) monitor, jitter stability graphing, sensor IPS velocity test, and click switch latency benchmark.
+          - **🖲 System-Wide Remapping**: Linux \`uinput\` virtual input device driver for global gaming remapping with udev helper.
+          - **💾 Multi-Profile Manager**: Instant profile switching with full JSON persistence in \`~/.config/mousy/profiles.json\`.
+          - **🎯 Pro Aim Trainer with Audio**: Procedural synthesized sound effects on hit, miss, and combo streaks, plus persistent leaderboards.
+          - **🔥 Heatmap Tracker**: Dual-layer movement/click density with gradient filters, fading trails, and PNG export.
+          - **⏺ Macro Studio**: Precision microsecond macro recording, presets, and real playback execution.
 
----
+          ---
 
-### 📦 Assets & Verification
-Download \`mousy-${TAG}-linux-x86_64.tar.gz\` below and run:
-\`\`\`bash
-tar -xzvf mousy-${TAG}-linux-x86_64.tar.gz
-cd mousy-${TAG}-linux-x86_64
-./run.sh
-\`\`\`
-EOF
+          ### 📦 Installation
+          Download \`mousy-${TAG}-linux-x86_64.tar.gz\` below and run:
+          \`\`\`bash
+          tar -xzvf mousy-${TAG}-linux-x86_64.tar.gz
+          cd mousy-${TAG}-linux-x86_64
+          ./run.sh
+          \`\`\`
+          EOF
 
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2

@@ -61,7 +61,7 @@ cmake -B build -S .
 cmake --build build
 
 # 3. Commit version bump
-git add VERSION CMakeLists.txt src/Version.h.in src/MainWindow.cpp src/MainWindow.h
+git add -A
 git commit -m "chore(release): bump version to ${TAG} [${TYPE}]
 
 SemVer Meaning:

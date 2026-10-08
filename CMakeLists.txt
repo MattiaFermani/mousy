@@ -29,7 +29,7 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 COMPONENTS Core Gui Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Core Gui Widgets Multimedia REQUIRED)
 
 # Automatic Git version extraction
 set(MOUSY_GIT_COMMIT "unknown")
@@ -63,15 +63,12 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
     endif()
 endif()
 
-# Parse SemVer if git tag exists
-if(MOUSY_GIT_TAG MATCHES "^v([0-9]+)\\.([0-9]+)\\.([0-9]+)(.*)")
-    set(MOUSY_VERSION_MAJOR "${CMAKE_MATCH_1}")
-    set(MOUSY_VERSION_MINOR "${CMAKE_MATCH_2}")
-    set(MOUSY_VERSION_PATCH "${CMAKE_MATCH_3}")
-    set(MOUSY_VERSION_EXTRA "${CMAKE_MATCH_4}")
-    set(MOUSY_VERSION_STRING "v${MOUSY_VERSION_MAJOR}.${MOUSY_VERSION_MINOR}.${MOUSY_VERSION_PATCH}${MOUSY_VERSION_EXTRA}")
+# Parse SemVer string from git or BASE_VERSION anchor
+if(MOUSY_GIT_TAG MATCHES "^v${BASE_VERSION}(.*)")
+    set(MOUSY_VERSION_EXTRA "${CMAKE_MATCH_1}")
+    set(MOUSY_VERSION_STRING "v${BASE_VERSION}${MOUSY_VERSION_EXTRA}")
 else()
-    set(MOUSY_VERSION_STRING "v${MOUSY_VERSION_MAJOR}.${MOUSY_VERSION_MINOR}.${MOUSY_VERSION_PATCH}")
+    set(MOUSY_VERSION_STRING "v${BASE_VERSION}")
 endif()
 
 string(TIMESTAMP MOUSY_BUILD_TIMESTAMP "%Y-%m-%d %H:%M:%S UTC" UTC)
@@ -95,6 +92,16 @@ add_executable(Mousy
     src/AimTrainerWidget.h
     src/MacroWidget.cpp
     src/MacroWidget.h
+    src/ObjLoader.cpp
+    src/ObjLoader.h
+    src/ProfileManager.cpp
+    src/ProfileManager.h
+    src/AudioFx.cpp
+    src/AudioFx.h
+    src/DiagnosticsWidget.cpp
+    src/DiagnosticsWidget.h
+    src/UInputManager.cpp
+    src/UInputManager.h
     "${CMAKE_CURRENT_BINARY_DIR}/src/Version.h"
 )
 
@@ -103,4 +110,4 @@ target_include_directories(Mousy PRIVATE
     "${CMAKE_CURRENT_BINARY_DIR}/src"
 )
 
-target_link_libraries(Mousy PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets)
+target_link_libraries(Mousy PRIVATE Qt6::Core Qt6::Gui Qt6::Widgets Qt6::Multimedia)

@@ -1,4 +1,6 @@
 #include "AimTrainerWidget.h"
+#include "AudioFx.h"
+#include "ProfileManager.h"
 #include <QPainter>
 #include <QMouseEvent>
 #include <QRadialGradient>
@@ -27,12 +29,15 @@ AimTrainerWidget::AimTrainerWidget(QWidget *parent) : QWidget(parent) {
     connect(countdownTimer, &QTimer::timeout, [this]() {
         countdown--;
         if (countdown <= 0) {
+            AudioFx::instance().playCountdown(true);
             countdownTimer->stop();
             gameRunning = true;
             gameTimer->start(16);
             spawnTimer->start(spawnIntervalMs);
             reactionTimer.start();
             spawnTarget();
+        } else {
+            AudioFx::instance().playCountdown(false);
         }
         update();
     });
@@ -56,6 +61,7 @@ void AimTrainerWidget::startGame() {
 
     // Start countdown
     countdown = 3;
+    AudioFx::instance().playCountdown(false);
     countdownTimer->start(700);
     emitStats();
     update();
@@ -70,6 +76,18 @@ void AimTrainerWidget::stopGame() {
 
     double avgReaction = (hits > 0) ? (totalReactionMs / hits) : 0;
     double accuracy = (hits + misses > 0) ? (100.0 * hits / (hits + misses)) : 0;
+
+    // Save personal records to active profile
+    QString modeName = (gameMode == Flick) ? "Flick" : (gameMode == GridShot ? "GridShot" : "Classic");
+    MouseProfile &prof = ProfileManager::instance().activeProfile();
+    if (hits > prof.highScores.value(modeName, 0)) prof.highScores[modeName] = hits;
+    if (accuracy > prof.bestAccuracy.value(modeName, 0.0)) prof.bestAccuracy[modeName] = accuracy;
+    if (bestStreak > prof.bestStreak.value(modeName, 0)) prof.bestStreak[modeName] = bestStreak;
+    if (avgReaction > 0 && (prof.bestReactionMs.value(modeName, 9999) == 0 || avgReaction < prof.bestReactionMs.value(modeName, 9999))) {
+        prof.bestReactionMs[modeName] = static_cast<int>(avgReaction);
+    }
+    ProfileManager::instance().save();
+
     emit gameFinished(hits, misses, avgReaction, accuracy);
 
     targets.clear();
@@ -159,6 +177,7 @@ void AimTrainerWidget::gameTick() {
             // Spawn red particles for miss
             spawnParticles(targets[i].center, QColor(255, 60, 60), 8);
             addHitText(targets[i].center, "MISS", QColor(255, 60, 60));
+            AudioFx::instance().playMiss();
             targets.removeAt(i);
             misses++;
             currentStreak = 0;
@@ -219,6 +238,12 @@ void AimTrainerWidget::mousePressEvent(QMouseEvent *event) {
             }
             addHitText(targets[i].center, text, textColor);
 
+            if (currentStreak >= 5 && currentStreak % 5 == 0) {
+                AudioFx::instance().playStreak();
+            } else {
+                AudioFx::instance().playHit();
+            }
+
             targets.removeAt(i);
             hitSomething = true;
             reactionTimer.restart();
@@ -231,6 +256,7 @@ void AimTrainerWidget::mousePressEvent(QMouseEvent *event) {
         currentStreak = 0;
         spawnParticles(click, QColor(255, 60, 60, 150), 6);
         addHitText(click, "MISS", QColor(255, 60, 60));
+        AudioFx::instance().playMiss();
     }
     emitStats();
     update();

@@ -18,18 +18,25 @@ Mousy is structured into high-performance, modular Qt components:
 
 ```
 mousy/
-├── CMakeLists.txt                 # Auto-versioning, Git metadata extraction, Qt6 linking
+├── CMakeLists.txt                 # Auto-versioning, Git metadata extraction, Qt6 & Multimedia linking
 ├── VERSION                        # Semantic version anchor (SemVer 2.0.0)
 ├── .github/workflows/release.yml  # Automated GitHub Actions CI/CD release pipeline
-├── scripts/release.sh             # Interactive local release bump & tag tool
+├── scripts/
+│   ├── release.sh                 # Interactive local release bump & tag tool
+│   └── 99-mousy.rules             # Udev rules for Linux uinput permissions without root
 └── src/
     ├── main.cpp                   # Global Qt Application & dark cyberpunk QSS styling
-    ├── MainWindow.h/.cpp          # Tab management, status bar, and central coordination
+    ├── MainWindow.h/.cpp          # Tab management, profile bar, and central coordination
     ├── Version.h.in               # CMake template generating dynamic build metadata
-    ├── MouseViewWidget.h/.cpp     # Custom 3D perspective mouse model, picking, RGB engine
+    ├── MouseViewWidget.h/.cpp     # 3D mouse viewport, picking, inertia, custom RGB zones, HUD
     ├── HeatmapWidget.h/.cpp       # Dual-layer motion & click density canvas with PNG export
-    ├── AimTrainerWidget.h/.cpp    # 3 game modes, particle system, reaction time tracking
-    └── MacroWidget.h/.cpp         # Macro recorder, loop multiplier, speed scaler, presets
+    ├── AimTrainerWidget.h/.cpp    # 3 game modes, particle system, reaction timer, records
+    ├── MacroWidget.h/.cpp         # Macro recorder, loop multiplier, speed scaler, presets
+    ├── DiagnosticsWidget.h/.cpp   # Polling rate (Hz), jitter (ms), IPS speed, switch latency
+    ├── ObjLoader.h/.cpp           # Wavefront OBJ & STL parser, normalizer, and exporter
+    ├── ProfileManager.h/.cpp      # Multi-profile system, auto-persistence to profiles.json
+    ├── AudioFx.h/.cpp             # Procedural 16-bit PCM audio synthesizer (QAudioSink)
+    └── UInputManager.h/.cpp       # Linux /dev/uinput virtual device & event translator
 ```
 
 ---
@@ -93,17 +100,17 @@ Add a dedicated **Diagnostics** tab:
 
 ---
 
-## 4. 📋 Step-by-Step Implementation Guide
-
-| Order | Task | Complexity | Impact |
-|:---:|:---|:---:|:---:|
-| **1** | **Config Persistence (`QSettings` / JSON)**: Auto-save button bindings & settings | Low | ⭐⭐⭐⭐⭐ |
-| **2** | **Multiple Profiles**: Allow profile creation (Gaming, Work, Editing) | Medium | ⭐⭐⭐⭐ |
-| **3** | **Audio FX in Aim Trainer**: Add punchy hit/miss sound effects | Low | ⭐⭐⭐⭐ |
-| **4** | **Polling Rate & Jitter Benchmark Tab**: Test real mouse sensor frequency | Medium | ⭐⭐⭐⭐⭐ |
-| **5** | **Udev Rule & `uinput` Remapping**: Real system-wide button translation | High | ⭐⭐⭐⭐⭐ |
-| **6** | **Custom 3D Mesh Loader**: Load custom mouse `.obj` models | High | ⭐⭐⭐⭐ |
-| **7** | **libratbag / ratbagd Integration**: Flash onboard hardware memory | High | ⭐⭐⭐⭐⭐ |
+## 4. 📋 Step-by-Step Implementation Guide & Progress
+ 
+| Order | Task | Complexity | Impact | Status |
+|:---:|:---|:---:|:---:|:---:|
+| **1** | **Config Persistence (`~/.config/mousy/profiles.json`)**: Auto-save profiles & bindings | Low | ⭐⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **2** | **Multiple Profiles**: Instant switching (`Default`, `FPS Gaming`, `Productivity`) | Medium | ⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **3** | **Audio FX in Aim Trainer**: Procedural PCM synthesizer with countdown & streak chimes | Low | ⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **4** | **Polling Rate & Diagnostics Tab**: Real-time Hz, jitter ms, IPS speed, switch latency | Medium | ⭐⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **5** | **Udev Rule & `uinput` Virtual Device**: Hardware event translation & macro playback | High | ⭐⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **6** | **Custom 3D Mesh Loader & Exporter**: OBJ/STL parser, normalizer, inertia & RGB zones | High | ⭐⭐⭐⭐ | ✅ **Completed (v1.1.0)** |
+| **7** | **libratbag / ratbagd Integration**: Flash onboard hardware memory via DBus | High | ⭐⭐⭐⭐⭐ | 🚀 *Planned (v1.2.0)* |
 
 ---
 
