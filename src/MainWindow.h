@@ -27,6 +27,7 @@ private slots:
     void onAimGameFinished(int hits, int misses, double avgReaction, double accuracy);
     void onHeatmapStatsChanged(int moves, int clicks);
     void onExportHeatmap();
+    void showAboutDialog();
 
 private:
     QTabWidget *tabWidget;

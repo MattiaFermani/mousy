@@ -1,0 +1,61 @@
+#ifndef MOUSY_VERSION_H
+#define MOUSY_VERSION_H
+
+#include <QString>
+
+namespace MousyVersion {
+    // ========================================================================
+    // SEMANTIC VERSIONING 2.0.0 (SemVer)
+    // Format: MAJOR.MINOR.PATCH [+BUILD METADATA]
+    // ========================================================================
+
+    // MAJOR (Version): Increment when incompatible architectural changes or
+    // fundamental rewrites occur.
+    constexpr int Major = @MOUSY_VERSION_MAJOR@;
+
+    // MINOR (Subversion): Increment when new functionality is added in a
+    // backwards-compatible manner (e.g. new studio tabs, hardware drivers, RGB engines).
+    constexpr int Minor = @MOUSY_VERSION_MINOR@;
+
+    // PATCH (Revision): Increment when backwards-compatible bug fixes, UI polish,
+    // or calibration corrections are applied.
+    constexpr int Patch = @MOUSY_VERSION_PATCH@;
+
+    const QString VersionString = "@MOUSY_VERSION_STRING@";
+    const QString GitCommit     = "@MOUSY_GIT_COMMIT@";
+    const QString GitBranch     = "@MOUSY_GIT_BRANCH@";
+    const QString BuildTime     = "@MOUSY_BUILD_TIMESTAMP@";
+    const QString BuildType     = "@CMAKE_BUILD_TYPE@";
+
+    inline QString semVerBreakdown() {
+        return QString(
+            "<h3>Mousy %1</h3>"
+            "<p style='color: #888;'>Built from commit <code>%2</code> on %3</p>"
+            "<hr style='border: 1px solid #2a2a35;'>"
+            "<h4>Semantic Versioning Structure:</h4>"
+            "<table style='width: 100%; border-collapse: collapse; font-size: 13px;'>"
+            "<tr>"
+            "  <td style='padding: 6px; color: #00d2ff; font-weight: bold;'>MAJOR (%4)</td>"
+            "  <td style='padding: 6px; color: #aaa;'><b>Primary Architecture</b> — Fundamental application core & breaking shifts.</td>"
+            "</tr>"
+            "<tr>"
+            "  <td style='padding: 6px; color: #00ff90; font-weight: bold;'>MINOR (%5)</td>"
+            "  <td style='padding: 6px; color: #aaa;'><b>Subversion / Features</b> — New studio modules, lighting modes, and tools.</td>"
+            "</tr>"
+            "<tr>"
+            "  <td style='padding: 6px; color: #ffaa00; font-weight: bold;'>PATCH (%6)</td>"
+            "  <td style='padding: 6px; color: #aaa;'><b>Revision / Maintenance</b> — Performance tweaks, UI polish, and bug fixes.</td>"
+            "</tr>"
+            "<tr>"
+            "  <td style='padding: 6px; color: #c084fc; font-weight: bold;'>BUILD (%7)</td>"
+            "  <td style='padding: 6px; color: #aaa;'><b>Git Revision</b> — Verified source control commit identifier.</td>"
+            "</tr>"
+            "</table>"
+            "<hr style='border: 1px solid #2a2a35;'>"
+            "<p style='font-size: 12px; color: #777;'>GitHub: <a href='https://github.com/MattiaFermani/mousy' style='color: #00d2ff;'>MattiaFermani/mousy</a> | "
+            "<a href='https://github.com/MattiaFermani/mousy/releases' style='color: #00d2ff;'>View Releases</a></p>"
+        ).arg(VersionString, GitCommit, BuildTime).arg(Major).arg(Minor).arg(Patch).arg(GitCommit);
+    }
+}
+
+#endif // MOUSY_VERSION_H

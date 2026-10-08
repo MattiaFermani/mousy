@@ -3,6 +3,7 @@
 #include "HeatmapWidget.h"
 #include "AimTrainerWidget.h"
 #include "MacroWidget.h"
+#include "Version.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -16,10 +17,11 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
+#include <QDialog>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent) {
-    setWindowTitle("Mousy — Advanced Mouse Editor");
+    setWindowTitle(QString("Mousy %1 — Advanced Mouse Editor").arg(MousyVersion::VersionString));
     resize(1050, 720);
     setupUi();
 }
@@ -34,6 +36,20 @@ void MainWindow::setupUi() {
     tabWidget->addTab(createHeatmapTab(), "🔥  Heatmap");
     tabWidget->addTab(createAimTrainerTab(), "🎯  Aim Trainer");
     tabWidget->addTab(createMacroTab(), "⏺  Macros");
+
+    // Version & About button in tab bar corner
+    QPushButton *versionBtn = new QPushButton(QString("ℹ  %1").arg(MousyVersion::VersionString));
+    versionBtn->setCursor(Qt::PointingHandCursor);
+    versionBtn->setToolTip("View Semantic Version breakdown & release details");
+    versionBtn->setStyleSheet(R"(
+        QPushButton {
+            background: #182230; color: #00d2ff; border: 1px solid #283848;
+            padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: bold; margin-right: 8px;
+        }
+        QPushButton:hover { background: #223245; border-color: #00d2ff; }
+    )");
+    connect(versionBtn, &QPushButton::clicked, this, &MainWindow::showAboutDialog);
+    tabWidget->setCornerWidget(versionBtn, Qt::TopRightCorner);
 }
 
 // ─── BUTTON MAPPER TAB ──────────────────────────────────────────
@@ -487,3 +503,27 @@ void MainWindow::onAimGameFinished(int hits, int misses, double avgReaction, dou
 QWidget* MainWindow::createMacroTab() {
     return new MacroWidget();
 }
+
+void MainWindow::showAboutDialog() {
+    QDialog dialog(this);
+    dialog.setWindowTitle("About Mousy — Version & SemVer Breakdown");
+    dialog.setMinimumWidth(520);
+
+    QVBoxLayout *layout = new QVBoxLayout(&dialog);
+    layout->setSpacing(16);
+    layout->setContentsMargins(24, 24, 24, 24);
+
+    QLabel *content = new QLabel(MousyVersion::semVerBreakdown());
+    content->setWordWrap(true);
+    content->setOpenExternalLinks(true);
+    layout->addWidget(content);
+
+    QPushButton *closeBtn = new QPushButton("Close");
+    closeBtn->setFixedWidth(100);
+    closeBtn->setStyleSheet("padding: 8px 16px; font-weight: bold;");
+    connect(closeBtn, &QPushButton::clicked, &dialog, &QDialog::accept);
+    layout->addWidget(closeBtn, 0, Qt::AlignRight);
+
+    dialog.exec();
+}
+

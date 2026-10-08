@@ -68,6 +68,36 @@ cmake --build build
 
 ---
 
+## 🏷 Versioning & Release Policy
+
+Mousy follows the **[Semantic Versioning 2.0.0 (SemVer)](https://semver.org/)** specification: `vMAJOR.MINOR.PATCH`.
+
+| Component | Nomenclature | Meaning & Trigger |
+| :--- | :--- | :--- |
+| **MAJOR** | `vX.0.0` | **Architectural Shifts**: Breaking changes, fundamental core rewrites, or major UX restructuring. |
+| **MINOR** | `v1.X.0` | **Subversion / Features**: New feature sets, diagnostic tabs, hardware integrations, or lighting engines. |
+| **PATCH** | `v1.0.X` | **Revision / Fixes**: Backwards-compatible bug fixes, UI styling polish, and calibration tweaks. |
+| **BUILD** | `+commit` | Git commit SHA, branch metadata, and compilation timestamp embedded automatically by CMake. |
+
+### 🚀 Cutting a Release
+
+Releases are completely automated via GitHub Actions (`.github/workflows/release.yml`) or via the included release script:
+
+```bash
+# Bump patch (e.g. v1.0.0 -> v1.0.1)
+./scripts/release.sh patch "Fix button glow offset"
+
+# Bump minor / subversion (e.g. v1.0.0 -> v1.1.0)
+./scripts/release.sh minor "Add Macro Studio loop controls"
+
+# Bump major (e.g. v1.0.0 -> v2.0.0)
+./scripts/release.sh major "New cross-platform driver architecture"
+```
+
+The script updates `VERSION`, re-generates `Version.h`, creates an annotated Git tag, pushes to GitHub, compiles release binaries, and publishes a new [GitHub Release](https://github.com/MattiaFermani/mousy/releases) with asset packages and checksums.
+
+---
+
 ## 📜 License
 
 MIT License

@@ -1,0 +1,132 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    name: Build & Publish Release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract Version Info
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "TAG=${TAG}" >> $GITHUB_OUTPUT
+          # Parse SemVer
+          RAW="${TAG#v}"
+          MAJOR=$(echo "$RAW" | cut -d. -f1)
+          MINOR=$(echo "$RAW" | cut -d. -f2)
+          PATCH=$(echo "$RAW" | cut -d. -f3 | cut -d- -f1)
+          echo "MAJOR=${MAJOR}" >> $GITHUB_OUTPUT
+          echo "MINOR=${MINOR}" >> $GITHUB_OUTPUT
+          echo "PATCH=${PATCH}" >> $GITHUB_OUTPUT
+
+      - name: Install Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential qt6-base-dev qt6-tools-dev
+
+      - name: Configure CMake
+        run: |
+          cmake -B build -S . -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build Application
+        run: |
+          cmake --build build --config Release -j$(nproc)
+
+      - name: Package Release Asset
+        run: |
+          TAG="${{ steps.version.outputs.TAG }}"
+          PKG_DIR="mousy-${TAG}-linux-x86_64"
+          mkdir -p "${PKG_DIR}"
+          cp build/Mousy "${PKG_DIR}/"
+          cp README.md "${PKG_DIR}/"
+          cp LICENSE "${PKG_DIR}/" 2>/dev/null || true
+          cp build.sh "${PKG_DIR}/"
+
+          # Create run script
+          cat << 'EOF' > "${PKG_DIR}/run.sh"
+#!/bin/bash
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+export LD_LIBRARY_PATH="/usr/lib/x86_64-linux-gnu:$LD_LIBRARY_PATH"
+exec "$DIR/Mousy" "$@"
+EOF
+          chmod +x "${PKG_DIR}/run.sh" "${PKG_DIR}/Mousy"
+
+          tar -czvf "${PKG_DIR}.tar.gz" "${PKG_DIR}"
+          sha256sum "${PKG_DIR}.tar.gz" > "${PKG_DIR}.tar.gz.sha256"
+
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          TAG="${{ steps.version.outputs.TAG }}"
+          MAJOR="${{ steps.version.outputs.MAJOR }}"
+          MINOR="${{ steps.version.outputs.MINOR }}"
+          PATCH="${{ steps.version.outputs.PATCH }}"
+          COMMIT=$(git rev-parse --short HEAD)
+
+          cat << EOF > release_notes.md
+## 🖱 Mousy ${TAG}
+
+### 📐 Semantic Versioning Breakdown
+- **MAJOR (${MAJOR})**: Core engine & architecture stability.
+- **MINOR (${MINOR})**: Subversion feature additions (Button Mapper, Live Heatmap, Pro Aim Trainer, Macro Studio).
+- **PATCH (${PATCH})**: Maintenance revisions, calibration tweaks, and performance optimizations.
+- **Git Commit**: \`${COMMIT}\`
+
+---
+
+### 🌟 Key Capabilities
+- **🖱 Interactive Button Mapper**: Visual mouse top-down diagram with real-time neon hover highlights & direct key remapping.
+- **🌈 Dynamic RGB Studio**: 5 animated lighting modes (Neon Cyan, Rainbow Cycle, Cyberpunk Pink, Matrix Green, Crimson Fire) with 14-LED underglow simulation.
+- **⚙ Hardware Engine**: DPI stages (400-6400 DPI) and Polling Rate selector (125Hz-1000Hz).
+- **🔥 Live Heatmap Tracker**: Dual-layer movement & click density using Gaussian splatting, fading neon trails, and **PNG snapshot export**.
+- **🎯 Pro Aim Trainer**: 3 game modes (Classic, Flick, GridShot) with particle explosion bursts, combo streak fire, and full analytics.
+- **⏺ Macro Studio**: Precision event recorder with quick presets (Double-Click, Rapid Fire, Text Sequence), loop repeats, and speed scaling.
+
+---
+
+### 📦 Assets & Verification
+Download \`mousy-${TAG}-linux-x86_64.tar.gz\` below and run:
+\`\`\`bash
+tar -xzvf mousy-${TAG}-linux-x86_64.tar.gz
+cd mousy-${TAG}-linux-x86_64
+./run.sh
+\`\`\`
+EOF
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.TAG }}
+          name: Mousy ${{ steps.version.outputs.TAG }}
+          body_path: release_notes.md
+          draft: false
+          prerelease: false
+          files: |
+            mousy-*-linux-x86_64.tar.gz
+            mousy-*-linux-x86_64.tar.gz.sha256
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
