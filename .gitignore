@@ -1,0 +1,27 @@
+# Build directories
+build/
+cmake-build-*/
+
+# IDE files
+.idea/
+.vscode/
+*.user
+*.swp
+*.swo
+*~
+
+# Compiled objects
+*.o
+*.obj
+*.so
+*.dylib
+*.exe
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+Makefile
+cmake_install.cmake
+
+# Mousy macro files (user data)
+*.mousy
